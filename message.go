@@ -1,7 +1,7 @@
 package pfcp
 
 import (
-	"github.com/free5gc/pfcp/pfcpType"
+	"github.com/BENHSU0723/pfcp/pfcpType"
 )
 
 type Message struct {
@@ -218,6 +218,7 @@ type PDI struct {
 	FramedRoute                   *pfcpType.FramedRoute                   `tlv:"153"`
 	FramedRouting                 *pfcpType.FramedRouting                 `tlv:"154"`
 	FramedIPv6Route               *pfcpType.FramedIPv6Route               `tlv:"155"`
+	IpMulticastAddr               *pfcpType.IpMulticastAddress            `tlv:"188"`
 }
 
 type EthernetPacketFilter struct {

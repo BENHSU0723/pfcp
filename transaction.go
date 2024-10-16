@@ -7,7 +7,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/free5gc/pfcp/logger"
+	"github.com/BENHSU0723/pfcp/logger"
 )
 
 type TransactionType uint8

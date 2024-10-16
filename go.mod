@@ -3,7 +3,6 @@ module github.com/BENHSU0723/pfcp
 go 1.17
 
 require (
-	github.com/free5gc/pfcp v1.0.7
 	github.com/free5gc/tlv v1.0.2
 	github.com/sirupsen/logrus v1.8.1
 	github.com/stretchr/testify v1.8.3
