@@ -1,17 +1,17 @@
 package pfcpType
 
 import (
-	"encoding/binary"
 	"fmt"
+	"net"
 )
 
 // ref to Figure 8.2.137-1: IP Multicast Address
 type IpMulticastAddress struct {
 	Flag      uint8
-	Ipv4Start uint32
-	Ipv6Start [4]uint32
-	Ipv4End   uint32
-	Ipv6End   [4]uint32
+	Ipv4Start net.IP
+	Ipv6Start net.IP
+	Ipv4End   net.IP
+	Ipv6End   net.IP
 }
 
 // used for flag IE
@@ -24,26 +24,94 @@ const (
 )
 
 func (i *IpMulticastAddress) MarshalBinary() (data []byte, err error) {
-	switch i.Flag {
-	case IpMulticastAddressOnlyV4Start:
-		data = make([]byte, 5)
-		data[0] = i.Flag
-		binary.BigEndian.PutUint32(data[1:], i.Ipv4Start)
-		return data, nil
-	default:
-		return nil, fmt.Errorf("not support this kind of encoding type[%b]", i.Flag)
+	// Octet 5
+	data = append([]byte(""), i.Flag)
+
+	// Octet m to (m+3)
+	if i.Flag == IpMulticastAddressOnlyV4Start || i.Flag == IpMulticastAddressV4StartV4End {
+		if i.Ipv4Start.IsUnspecified() {
+			return []byte(""), fmt.Errorf("IPv4 address shall be present if V4 is set")
+		}
+		data = append(data, i.Ipv4Start.To4()...)
 	}
+
+	// Octet p to (p+15)
+	if i.Flag == IpMulticastAddressOnlyV6Start || i.Flag == IpMulticastAddressV6StartV6End {
+		if i.Ipv6Start.IsUnspecified() {
+			return []byte(""), fmt.Errorf("IPv6 address shall be present if V6 is set")
+		}
+		data = append(data, i.Ipv6Start.To16()...)
+	}
+
+	// Octet q to (q+3)
+	if i.Flag == IpMulticastAddressV4StartV4End {
+		if i.Ipv4End.IsUnspecified() {
+			return []byte(""), fmt.Errorf("IPv4 address shall be present if V4 is set")
+		}
+		data = append(data, i.Ipv4End.To4()...)
+	}
+
+	// Octet r to (r+15)
+	if i.Flag == IpMulticastAddressV6StartV6End {
+		if i.Ipv6End.IsUnspecified() {
+			return []byte(""), fmt.Errorf("IPv6 address shall be present if V6 is set")
+		}
+		data = append(data, i.Ipv6End.To16()...)
+	}
+
+	return data, nil
 }
 
 func (i *IpMulticastAddress) UnmarshalBinary(data []byte) error {
 	length := uint16(len(data))
 
-	if length != 5 {
-		return fmt.Errorf("not support others than IPv4 decodeing, received tpye[%b]", data[0])
+	var idx uint16 = 0
+	// Octet 5
+	if length < idx+1 {
+		return fmt.Errorf("Inadequate TLV length: %d", length)
+	}
+	i.Flag = data[idx]
+	idx += 1
+
+	// Octet m to (m+3)
+	if i.Flag == IpMulticastAddressOnlyV4Start || i.Flag == IpMulticastAddressV4StartV4End {
+		if length < idx+net.IPv4len {
+			return fmt.Errorf("Inadequate TLV length: %d", length)
+		}
+		i.Ipv4Start = net.IP(data[idx : idx+net.IPv4len])
+		idx = idx + net.IPv4len
 	}
 
-	i.Flag = data[0]
-	i.Ipv4Start = binary.BigEndian.Uint32(data[1:])
+	// Octet p to (p+15)
+	if i.Flag == IpMulticastAddressOnlyV6Start || i.Flag == IpMulticastAddressV6StartV6End {
+		if length < idx+net.IPv6len {
+			return fmt.Errorf("Inadequate TLV length: %d", length)
+		}
+		i.Ipv6Start = net.IP(data[idx : idx+net.IPv6len])
+		idx = idx + net.IPv6len
+	}
+
+	// Octet q to (q+3)
+	if i.Flag == IpMulticastAddressV4StartV4End {
+		if length < idx+net.IPv4len {
+			return fmt.Errorf("Inadequate TLV length: %d", length)
+		}
+		i.Ipv4End = net.IP(data[idx : idx+net.IPv4len])
+		idx = idx + net.IPv4len
+	}
+
+	// Octet r to (r+15)
+	if i.Flag == IpMulticastAddressV6StartV6End {
+		if length < idx+net.IPv6len {
+			return fmt.Errorf("Inadequate TLV length: %d", length)
+		}
+		i.Ipv6End = net.IP(data[idx : idx+net.IPv6len])
+		idx = idx + net.IPv6len
+	}
+
+	if length != idx {
+		return fmt.Errorf("Inadequate TLV length: %d", length)
+	}
 
 	return nil
 }
