@@ -218,7 +218,7 @@ type PDI struct {
 	FramedRoute                   *pfcpType.FramedRoute                   `tlv:"153"`
 	FramedRouting                 *pfcpType.FramedRouting                 `tlv:"154"`
 	FramedIPv6Route               *pfcpType.FramedIPv6Route               `tlv:"155"`
-	IpMulticastAddr               *pfcpType.IpMulticastAddress            `tlv:"188"`
+	IpMulticastAddr               *pfcpType.IpMulticastAddress            `tlv:"191"`
 }
 
 type EthernetPacketFilter struct {
